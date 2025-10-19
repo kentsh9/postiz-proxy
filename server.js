@@ -5,46 +5,55 @@ import bodyParser from "body-parser";
 const app = express();
 app.use(bodyParser.json());
 
-// 用于 Meta Webhook 验证
+// ✅ Meta 验证令牌（保持一致）
 const VERIFY_TOKEN = "postiz_ig_token_123";
 
-// ✅ 你的主服务器（Postiz）的接收端口
+// ✅ 你的 Postiz 主服务地址（修改为你自己的）
 const FORWARD_URL = "http://94.72.121.228:5000/api/facebook/webhook";
 
-// Webhook 验证 (GET)
+// ✅ Render 提供的动态端口（本地则用 3000）
+const PORT = process.env.PORT || 3000;
+
+// ====== GET 验证接口 ======
 app.get("/facebook/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("✅ Facebook webhook verified");
+    console.log("✅ Facebook webhook verified successfully");
     res.status(200).send(challenge);
   } else {
-    console.warn("❌ Verification failed: invalid token");
+    console.warn("❌ Verification failed: invalid token or mode");
     res.sendStatus(403);
   }
 });
 
-// Webhook 接收 (POST)
+// ====== POST Webhook 接收与转发 ======
 app.post("/facebook/webhook", async (req, res) => {
-  try {
-    console.log("📩 Received Webhook:", JSON.stringify(req.body, null, 2));
+  console.log("📩 Received Webhook Event:");
+  console.log(JSON.stringify(req.body, null, 2));
 
-    // 转发给主服务器
+  try {
     const response = await axios.post(FORWARD_URL, req.body, {
       headers: { "Content-Type": "application/json" },
       timeout: 10000,
     });
-
-    console.log("✅ Forwarded to backend:", response.status);
+    console.log(`✅ Forwarded to backend: HTTP ${response.status}`);
   } catch (error) {
-    console.error("❌ Forwarding failed:", error.message);
+    if (error.response) {
+      console.error(`❌ Backend error: ${error.response.status}`);
+    } else if (error.request) {
+      console.error("⚠️ No response from backend (timeout or network issue)");
+    } else {
+      console.error("❌ Forwarding failed:", error.message);
+    }
   }
 
   res.sendStatus(200);
 });
 
-app.listen(3000, () => {
-  console.log("🚀 Proxy running on port 3000");
+// ====== 启动服务 ======
+app.listen(PORT, () => {
+  console.log(`🚀 Proxy running on port ${PORT}`);
 });
