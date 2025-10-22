@@ -9,7 +9,7 @@ app.use(bodyParser.json());
 const VERIFY_TOKEN = "postiz_ig_token_123";
 
 // ✅ 你的 Postiz 主服务地址（修改为你自己的）
-const FORWARD_URL = "http://94.72.121.228:5000/api/facebook/webhook";
+const FORWARD_URL = "https://postiz.agrrobotics.com/facebook/webhook";
 
 // ✅ Render 提供的动态端口（本地则用 3000）
 const PORT = process.env.PORT || 3000;
